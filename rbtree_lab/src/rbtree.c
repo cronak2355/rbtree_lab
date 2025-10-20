@@ -7,13 +7,20 @@
 
 
 
-
-
 //////////////////////////////////////////////////////
 #include "rbtree.h"
 
 #include <stdlib.h>
+//////////////////////////////////////////////////////
+node_t* case3_LL_Match(node_t *z);
+node_t* case3_RR_Match(node_t *z);
+node_t* case3_LR_MissMatch(node_t *z);
+node_t* case3_RL_MissMatch(node_t *z);
 
+
+
+
+//////////////////////////////////////////////////////
 rbtree *new_rbtree(void) {
   rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
   // TODO: initialize struct if needed
@@ -86,9 +93,84 @@ node_t *rbtree_insert(rbtree *t, const key_t key) {
   return t->root;
 }
 
-node_t case3(rbtree *t, const key_t key) {
+node_t* case3_LL_Match(node_t* z) { //테스트 케이스3 왼쪽 부모의 왼쪽 노드가 빨간일 경우 
+    node_t * parent = z->parent;  // z의 부모를 parent로 지정
+    node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
+    
+    grandparent->left = parent->right; // 부모의 오른쪽을 할아버지의 왼쪽으로 지정
+    if (parent->right != NULL) //부모의 오른쪽이 비어있지 않을 경우
+        parent->right->parent = grandparent; // 부모의 오른쪽 노드의 부모를 할아버지로 지정
 
+    parent->right = grandparent;  // 할아버지를 부모의 오른쪽으로
+    parent->parent = grandparent->parent;  // 부모의 부모를 증조부모로 연결
+    
+    
+    if (grandparent->parent != NULL) { // 증조부모가 있다면
+        if (grandparent->parent->left == grandparent) {//할아버지의 위치가 증조부의 왼쪽이였다면
+            grandparent->parent->left = parent; //부모를 증조부의 왼쪽으로
+        }
+        else {
+          grandparent->parent->right = parent; //아니라면 부모를 증조부의 오른쪽으로
+        }      
+    }
+    grandparent->parent = parent;  // 할아버지의 부모를 parent로
+
+    // 색 변경
+    parent->color = RBTREE_BLACK;
+    grandparent->color = RBTREE_RED;  
+
+    return parent; // 새로운 서브트리 루트
 }
+
+node_t* case3_RR_Match(node_t* z) { //테스트 케이스3 오른쪽 부모의 오른쪽 노드가 빨간일 경우 
+    node_t * parent = z->parent;  // z의 부모를 parent로 지정
+    node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
+    
+    grandparent->right = parent->left; // 부모의 왼쪽을 할아버지의 오른쪽으로 지정
+    if (parent->left != NULL) //부모의 왼쪽이 비어있지 않을 경우
+        parent->left->parent = grandparent; // 부모의 왼쪽 노드의 부모를 할아버지로 지정
+
+    parent->left = grandparent;  // 할아버지를 부모의 왼쪽으로
+    parent->parent = grandparent->parent;  // 부모의 부모를 증조부모로 연결
+    
+    
+    if (grandparent->parent != NULL) { // 증조부모가 있다면
+        if (grandparent->parent->left == grandparent) //할아버지의 위치가 증조부의 왼쪽이였다면
+            grandparent->parent->left = parent; //부모를 증조부의 왼쪽으로
+        else
+            grandparent->parent->right = parent; //아니라면 부모를 증조부의 오른쪽으로
+    }
+    
+    grandparent->parent = parent;  // 할아버지의 부모를 parent로
+
+    // 색 변경
+    parent->color = RBTREE_BLACK;
+    grandparent->color = RBTREE_RED;  // z->parent->parent 대신 grandparent 사용
+
+    return parent; // 새로운 서브트리 루트
+}
+
+node_t* case3_LR_MissMatch(node_t* z) {
+    node_t * parent = z->parent;  // z의 부모를 parent로 지정
+    node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
+    node_t * temp = z->right; //붙였다 뗄 노드 추가
+
+    grandparent->left = z; //할아버지의 왼쪽을 z로 설정
+    z->left = parent; //z의 왼쪽을 부모로 설정
+    parent->right = temp; //z의 왼쪽을 부모로 설정
+
+    if (grandparent->parent != NULL) { // 증조부모가 있다면
+        if (grandparent->parent->left == grandparent) {//할아버지의 위치가 증조부의 왼쪽이였다면
+            grandparent->parent->left = parent; //부모를 증조부의 왼쪽으로
+        }
+        else {
+          grandparent->parent->right = parent; //아니라면 부모를 증조부의 오른쪽으로
+        }
+    }
+
+    case3_LL_Match(z); //펴진 트리를 넘겨줌
+}
+
 
 node_t *rbtree_find(const rbtree *t, const key_t key) {
   // TODO: implement find

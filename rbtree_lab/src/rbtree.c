@@ -140,9 +140,9 @@ node_t* case3_LL_Match(node_t* z, rbtree *t) { //테스트 케이스3 왼쪽 부
     node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
     
     grandparent->left = parent->right; // 부모의 오른쪽을 할아버지의 왼쪽으로 지정
-    if (parent->right != t->nil) //부모의 오른쪽이 비어있지 않을 경우
-        parent->right->parent = grandparent; // 부모의 오른쪽 노드의 부모를 할아버지로 지정
-
+    if (parent->right != t->nil) {//부모의 오른쪽이 비어있지 않을 경우
+      parent->right->parent = grandparent; // 부모의 오른쪽 노드의 부모를 할아버지로 지정
+    }
     parent->right = grandparent;  // 할아버지를 부모의 오른쪽으로
     parent->parent = grandparent->parent;  // 부모의 부모를 증조부모로 연결
     
@@ -247,7 +247,20 @@ node_t* case1_Color_Change(node_t* z, rbtree *t) {
 node_t *rbtree_find(const rbtree *t, const key_t key) {
   // TODO: implement find
   //알비트리 찾기
-  return t->root;
+  node_t *temp = t->root;
+
+  while(t != t->nil) {
+    if (key == temp->key) {
+      return temp;
+    }
+    else if (key < temp->key) {
+      temp = temp->left;
+    }
+    else {
+      temp = temp->right;
+    } 
+  }
+  return NULL; // 못 찾은 경우
 }
 
 node_t *rbtree_min(const rbtree *t) {

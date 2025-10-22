@@ -12,12 +12,13 @@
 
 #include <stdlib.h>
 //////////////////////////////////////////////////////
-node_t* case3_LL_Match(node_t *z);
-node_t* case3_RR_Match(node_t *z);
-node_t* case3_LR_MissMatch(node_t *z);
-node_t* case3_RL_MissMatch(node_t *z);
-
-
+node_t* get_uncle(rbtree* t, node_t *grandparent, node_t *parent);
+node_t* fix_up(node_t *z, rbtree *t);
+node_t* case3_LL_Match(node_t *z, rbtree *t);
+node_t* case3_RR_Match(node_t *z, rbtree *t);
+node_t* case2_LR_MissMatch(node_t *z, rbtree *t);
+node_t* case2_RL_MissMatch(node_t *z, rbtree *t);
+node_t* case1_Color_Change(node_t *z, rbtree *t);
 
 
 //////////////////////////////////////////////////////
@@ -88,24 +89,72 @@ node_t *rbtree_insert(rbtree *t, const key_t key) {
   // 그 후 조건을 검사한다.
   // 위배되는 경우가 있을 경우 회전을 통해서 정상적인 트리로 만든다.
   // 트리의 루트를 리턴한다.
-  
 
+  t->root->color = RBTREE_BLACK; //루트는 블랙
+  fix_up(z, t);
   return t->root;
 }
 
-node_t* case3_LL_Match(node_t* z) { //테스트 케이스3 왼쪽 부모의 왼쪽 노드가 빨간일 경우 
+node_t* get_uncle(rbtree* t, node_t* grandparent, node_t* parent) {// 삼촌 반환 함수
+	if (grandparent == t->nil || parent == t->nil) {
+    return t->nil;
+  }
+  if (grandparent->left == parent) {
+    return grandparent->right;
+  } 	
+	else {
+    return grandparent->left;
+  }
+}
+
+node_t* get_uncle(rbtree* t, node_t* grandparent, node_t* parent) {
+	if (grandparent == t->nil || parent == t->nil) {
+        	return t->nil;
+   	 }
+   	 if (grandparent->left == parent) {
+        	return grandparent->right;
+    	} 	
+	else if (grandparent->right == parent) {
+        	return grandparent->left;
+    	}
+}
+
+node_t *fix_up(node_t *z, rbtree *t) {
+  node_t *parent = z->parent; //z의 부모를 parent로 지정
+  node_t *grandparent = parent->parent; //할아버지 노드 추가
+
+  while(z->parent->color == RBTREE_RED) { //모든 case에서 부모는 red이므로 case발동은 부모가 red라는 것을 전제로 함
+      if(get_uncle(t, grandparent, parent) == RBTREE_RED) { //부모가 red이고 삼촌도 red일 경우 
+        case1_Color_Change(z, t); //case1
+      }
+      else if(parent->right == z && grandparent->left == parent && get_uncle(t, grandparent, parent) == RBTREE_BLACK) {
+        case2_LR_MissMatch(z, t); //case2 LEFT and RIGHT 
+      }
+      else if(parent->left == z && grandparent->right == parent && get_uncle(t, grandparent, parent) == RBTREE_BLACK) {
+        case2_RL_MissMatch(z, t); //case2 RIGHT and LEFT
+      }
+      else if(parent->right == z && grandparent->right == parent&& get_uncle(t, grandparent, parent) == RBTREE_BLACK) {
+        case3_RR_Match(z, t); //case3 RIGHT and RIGHT
+      }
+      else if(parent->left == z && grandparent->left  == parent&& get_uncle(t, grandparent, parent) == RBTREE_BLACK) {
+        case3_LL_Match(z, t); //case3 LEFT and LEFT
+      }
+  }
+}
+
+node_t* case3_LL_Match(node_t* z, rbtree *t) { //테스트 케이스3 왼쪽 부모의 왼쪽 노드가 빨간일 경우 
     node_t * parent = z->parent;  // z의 부모를 parent로 지정
     node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
     
     grandparent->left = parent->right; // 부모의 오른쪽을 할아버지의 왼쪽으로 지정
-    if (parent->right != NULL) //부모의 오른쪽이 비어있지 않을 경우
+    if (parent->right != t->nil) //부모의 오른쪽이 비어있지 않을 경우
         parent->right->parent = grandparent; // 부모의 오른쪽 노드의 부모를 할아버지로 지정
 
     parent->right = grandparent;  // 할아버지를 부모의 오른쪽으로
     parent->parent = grandparent->parent;  // 부모의 부모를 증조부모로 연결
     
     
-    if (grandparent->parent != NULL) { // 증조부모가 있다면
+    if (grandparent->parent != t->nil) { // 증조부모가 있다면
         if (grandparent->parent->left == grandparent) {//할아버지의 위치가 증조부의 왼쪽이였다면
             grandparent->parent->left = parent; //부모를 증조부의 왼쪽으로
         }
@@ -122,19 +171,19 @@ node_t* case3_LL_Match(node_t* z) { //테스트 케이스3 왼쪽 부모의 왼�
     return parent; // 새로운 서브트리 루트
 }
 
-node_t* case3_RR_Match(node_t* z) { //테스트 케이스3 오른쪽 부모의 오른쪽 노드가 빨간일 경우 
+node_t* case3_RR_Match(node_t* z, rbtree *t) { //테스트 케이스3 오른쪽 부모의 오른쪽 노드가 빨간일 경우 
     node_t * parent = z->parent;  // z의 부모를 parent로 지정
     node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
     
     grandparent->right = parent->left; // 부모의 왼쪽을 할아버지의 오른쪽으로 지정
-    if (parent->left != NULL) //부모의 왼쪽이 비어있지 않을 경우
+    if (parent->left != t->nil) //부모의 왼쪽이 비어있지 않을 경우
         parent->left->parent = grandparent; // 부모의 왼쪽 노드의 부모를 할아버지로 지정
 
     parent->left = grandparent;  // 할아버지를 부모의 왼쪽으로
     parent->parent = grandparent->parent;  // 부모의 부모를 증조부모로 연결
     
     
-    if (grandparent->parent != NULL) { // 증조부모가 있다면
+    if (grandparent->parent != t->nil) { // 증조부모가 있다면
         if (grandparent->parent->left == grandparent) //할아버지의 위치가 증조부의 왼쪽이였다면
             grandparent->parent->left = parent; //부모를 증조부의 왼쪽으로
         else
@@ -150,27 +199,49 @@ node_t* case3_RR_Match(node_t* z) { //테스트 케이스3 오른쪽 부모의 �
     return parent; // 새로운 서브트리 루트
 }
 
-node_t* case3_LR_MissMatch(node_t* z) {
+node_t* case2_LR_MissMatch(node_t* z, rbtree *t) {
     node_t * parent = z->parent;  // z의 부모를 parent로 지정
     node_t * grandparent = z->parent->parent;  // 할아버지 노드 추가
-    node_t * temp = z->right; //붙였다 뗄 노드 추가
+    node_t * temp = z->left; //붙였다 뗄 노드 추가
 
     grandparent->left = z; //할아버지의 왼쪽을 z로 설정
+    z->parent = grandparent; //z의 부모를 할아버지로 설정
     z->left = parent; //z의 왼쪽을 부모로 설정
     parent->right = temp; //z의 왼쪽을 부모로 설정
+    parent->parent = z; //부모의 부모를 z로 설정
 
-    if (grandparent->parent != NULL) { // 증조부모가 있다면
-        if (grandparent->parent->left == grandparent) {//할아버지의 위치가 증조부의 왼쪽이였다면
-            grandparent->parent->left = parent; //부모를 증조부의 왼쪽으로
-        }
-        else {
-          grandparent->parent->right = parent; //아니라면 부모를 증조부의 오른쪽으로
-        }
-    }
-
-    case3_LL_Match(z); //펴진 트리를 넘겨줌
+    case3_LL_Match(z, t); //펴진 트리를 넘겨줌
 }
 
+node_t* case2_RL_MissMatch(node_t* z, rbtree *t) {
+    node_t *parent = z->parent; //z의 부모를 parent로 지정
+    node_t *grandparent = parent->parent; //할아버지 노드 추가
+    node_t *temp = z->right; //붙였다 뗄 노드 추가
+
+    grandparent->right = z; //할아버지의 오른쪽을 z로 설정
+    z->parent = grandparent; //z의 부모를 할아버지로 설정
+    z->right = parent; //z의 오른쪽을 부모로 설정
+    parent->left = temp; //z의 왼쪽을 부모로 설정  
+    parent->parent = z; //부모의 부모를 z로 설정
+
+    return case3_RR_Match(z, t); //펴진 트리를 넘겨줌
+}
+
+node_t* case1_Color_Change(node_t* z, rbtree *t) {
+  node_t *parent = z->parent; //z의 부모를 parent로 지정
+  node_t *grandparent = parent->parent; //할아버지 노드 추가
+
+  parent->color = RBTREE_BLACK;
+  if(grandparent->left == parent) {
+    grandparent->right->color = RBTREE_BLACK;
+  }
+  else {
+    grandparent->left->color = RBTREE_BLACK;
+  }
+  grandparent->color = RBTREE_RED;
+
+  return grandparent;
+}
 
 node_t *rbtree_find(const rbtree *t, const key_t key) {
   // TODO: implement find
